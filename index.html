@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>送给南文燕</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Microsoft YaHei', sans-serif;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .container {
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            margin: 0 auto 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            background: white;
+            padding: 10px;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 15px;
+        }
+
+        .name-text {
+            font-size: 48px;
+            color: white;
+            font-weight: bold;
+            opacity: 0;
+            transform: translateY(30px);
+            text-shadow: 2px 4px 8px rgba(0, 0, 0, 0.3),
+                         0 0 30px rgba(255, 182, 193, 0.8);
+            letter-spacing: 8px;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .name-text.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hearts {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .heart {
+            position: absolute;
+            font-size: 20px;
+            animation: floatHeart 6s ease-in-out infinite;
+            opacity: 0.7;
+        }
+
+        @keyframes floatHeart {
+            0%, 100% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.7;
+            }
+            90% {
+                opacity: 0.7;
+            }
+            100% {
+                transform: translateY(-100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .sparkle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: white;
+            border-radius: 50%;
+            animation: sparkle 1.5s ease-in-out infinite;
+        }
+
+        @keyframes sparkle {
+            0%, 100% { opacity: 0; transform: scale(0); }
+            50% { opacity: 1; transform: scale(1); }
+        }
+
+        .subtitle {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.9);
+            margin-top: 20px;
+            opacity: 0;
+            letter-spacing: 2px;
+            transition: opacity 0.3s ease;
+        }
+
+        .subtitle.visible {
+            opacity: 1;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="hearts" id="hearts"></div>
+
+    <div class="container">
+        <div class="canvas-wrapper">
+            <canvas id="canvas"></canvas>
+        </div>
+        <div class="name-text">南文燕</div>
+        <div class="subtitle">✨ 愿你每天都开心快乐 ✨</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = 380;
+        canvas.height = 380;
+
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = 'fish.png';
+
+        let currentLine = 0;
+        let totalLines = 0;
+        let lines = [];
+        let animationId = null;
+
+        img.onload = function() {
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let y = 0; y < canvas.height; y += 2) {
+                for (let x = 0; x < canvas.width; x += 2) {
+                    const i = (y * canvas.width + x) * 4;
+                    const r = imageData.data[i];
+                    const g = imageData.data[i + 1];
+                    const b = imageData.data[i + 2];
+                    
+                    if (r < 240 || g < 240 || b < 240) {
+                        lines.push({x, y, r, g, b});
+                    }
+                }
+            }
+
+            totalLines = lines.length;
+            lines.sort((a, b) => Math.sqrt(Math.pow(a.x - canvas.width/2, 2) + Math.pow(a.y - canvas.height/2, 2)) - 
+                                   Math.sqrt(Math.pow(b.x - canvas.width/2, 2) + Math.pow(b.y - canvas.height/2, 2)));
+            
+            animate();
+        };
+
+        function animate() {
+            const batchSize = 80;
+            
+            const nameText = document.querySelector('.name-text');
+            const subtitle = document.querySelector('.subtitle');
+            
+            if (currentLine === 0) {
+                nameText.classList.add('visible');
+                setTimeout(() => {
+                    subtitle.classList.add('visible');
+                }, 500);
+            }
+            
+            for (let i = 0; i < batchSize && currentLine < lines.length; i++) {
+                const line = lines[currentLine];
+                
+                ctx.fillStyle = `rgb(${line.r}, ${line.g}, ${line.b})`;
+                ctx.fillRect(line.x, line.y, 2, 2);
+                
+                currentLine++;
+            }
+
+            if (currentLine < lines.length) {
+                animationId = requestAnimationFrame(animate);
+            } else {
+                createSparkles();
+            }
+        }
+
+        function createHearts() {
+            const heartsContainer = document.getElementById('hearts');
+            const heartSymbols = ['❤️', '💕', '💖', '💗', '💝', '✨', '🌸'];
+            
+            setInterval(() => {
+                const heart = document.createElement('div');
+                heart.className = 'heart';
+                heart.innerHTML = heartSymbols[Math.floor(Math.random() * heartSymbols.length)];
+                heart.style.left = Math.random() * 100 + '%';
+                heart.style.animationDuration = (Math.random() * 3 + 4) + 's';
+                heart.style.fontSize = (Math.random() * 15 + 15) + 'px';
+                heartsContainer.appendChild(heart);
+                
+                setTimeout(() => heart.remove(), 7000);
+            }, 500);
+        }
+
+        function createSparkles() {
+            const wrapper = document.querySelector('.canvas-wrapper');
+            for (let i = 0; i < 12; i++) {
+                setTimeout(() => {
+                    const sparkle = document.createElement('div');
+                    sparkle.className = 'sparkle';
+                    sparkle.style.left = Math.random() * 100 + '%';
+                    sparkle.style.top = Math.random() * 100 + '%';
+                    sparkle.style.animationDelay = Math.random() * 2 + 's';
+                    wrapper.appendChild(sparkle);
+                }, i * 200);
+            }
+        }
+
+        createHearts();
+    </script>
+</body>
+</html>
